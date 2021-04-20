@@ -19,7 +19,7 @@ class Chunk:
             + chunk_bytes
             + calc_crc(chunk_name + chunk_bytes).astype(BigEndian_uint32).tobytes()
         )
-        print(len(result))
+
         return result
 
 
@@ -40,6 +40,13 @@ class Chunk_IHDR(Chunk):
     def __init__(self, chunks, b):
         assert len(b) == self.Data.itemsize
         self.data = np.frombuffer(b, dtype=self.Data)
+
+    def __str__(self):
+        result = "IHDR chunk: \n"
+        for name in self.Data.names:
+            result += f"{name}: {self.data[name]}\n"
+        return result
+
 
 @resources.register
 class Chunk_PLTE(Chunk):
@@ -92,6 +99,9 @@ class Chunk_sRGB(Chunk):
         assert len(b) == self.Data.itemsize
         self.data = np.frombuffer(b, dtype=self.Data)
 
+    def __str__(self):
+        return f"sRGB Chunk Data:\n\trendering intent: {self.data['rendering_intent']}"
+
 
 
 @resources.register
@@ -107,7 +117,7 @@ class Chunk_tIME(Chunk):
 
     chunk_name = 'tIME'
 
-    def __str__(self):    
+    def __str__(self):
      return "tIME Chunk Data: " + '\n' + \
             "Year: " + str(self.data["Year"]) + '\n' \
             "Month: " + str(self.data["Month"]) + '\n' \
@@ -115,29 +125,29 @@ class Chunk_tIME(Chunk):
             "Hour: " + str(self.data["Hour"]) + '\n' \
             "Minute: " + str(self.data["Minute"]) + '\n' \
             "Second: " + str(self.data["Second"]) + '\n' \
-            
+
 
     def __init__(self, chunks, b):
         assert len(b) == self.Data.itemsize
         self.data = np.frombuffer(b, dtype=self.Data)
-     
-           
+
+
 
 @resources.register
 class Chunk_tEXt(Chunk):
     chunk_name = 'tEXt'
-    
+
     def __str__(self):
      return "tEXt Chunk Data: " + '\n' + \
             "Keyword: " + self.Keyword + '\n' + \
             "Text: " + self.Text + '\n'
-    
+
     def __init__(self, chunks, b):
-        self.data = b       
-        [self.Keyword, self.Text ] = self.data.decode('iso-8859-1').split('\0') 
+        self.data = b
+        [self.Keyword, self.Text ] = self.data.decode('iso-8859-1').split('\0')
         assert len(b) == len(bytes(self.Keyword + self.Text + '\0', 'iso-8859-1'))
 
-        
+
 @resources.register
 class Chunk_gAMA(Chunk):
     Data = np.dtype([
@@ -186,14 +196,14 @@ class Chunk_bKGD(Chunk):
             result += "Pallete Index: " + str(self.data["PalleteIndex"])
 
         return result
-        
-    
-        
+
+
+
     def __init__(self, chunks, b):
         ihdr_chunk = next((chunk for chunk in chunks if chunk.chunk_name == 'IHDR'), None)
         if not ihdr_chunk:
             raise RuntimeError('Trying to load bKGD chunk without IHDR chunk')
-        
+
         color_type=ihdr_chunk.data["color_type"][0]
 
         if color_type == 0 or color_type == 4:
@@ -202,7 +212,7 @@ class Chunk_bKGD(Chunk):
             self.Data = self.DataColorTypes26
         elif color_type == 3:
             self.Data = self.DataColorTypes3
-        else: 
+        else:
             raise RuntimeError('IHDR chunk contains not recognised color type!')
 
         self.data = np.frombuffer(b, dtype=self.Data)
@@ -224,7 +234,7 @@ class Chunk_cHRM(Chunk):
 
     chunk_name = 'cHRM'
 
-    def __str__(self):    
+    def __str__(self):
         return "cHRM  Chunk Data: " + '\n' + \
                "White point x: " + str(self.data["white_point_x"][0] / 100000) + '\n' + \
                "White point y: " + str(self.data["white_point_y"][0] / 100000) + '\n' + \
