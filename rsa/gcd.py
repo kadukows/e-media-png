@@ -15,8 +15,8 @@ def extended_euclid(a: int, b: int, x: IntPtr, y: IntPtr) -> int:
         y.val = 1
         return b
 
-    x1 = IntPtr(val=-1)
-    y1 = IntPtr(val=-1)
+    x1 = IntPtr(val=0)
+    y1 = IntPtr(val=0)
     gcd = extended_euclid(b % a, a, x1, y1)
 
     x.val = y1.val - int(b/a) * x1.val

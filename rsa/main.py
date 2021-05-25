@@ -10,4 +10,4 @@ for i in range(10):
     print(f'gcd({a}, {b}): ', gcd(a, b))
 
     rsa_key = gen_rsa_key()
-    print(rsa_key)
+    print(rsa_key, f"n.bit_length(): {rsa_key.n.bit_length()}")

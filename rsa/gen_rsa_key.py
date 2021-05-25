@@ -7,21 +7,15 @@ from int_ptr import IntPtr
 def gen_rsa_key() -> RsaKey:
     p = gen_prime()
     q = gen_prime()
-    n = p * q
     m = (p - 1) * (q - 1)
     e = 2 ** 16 + 1
 
-    '''
-    d = n
-    while gcd(d, n) != 1:
-        d = randint(3, m)
-    '''
     # Find d
-    x = IntPtr(-1)
-    y = IntPtr(-1)
+    x = IntPtr(0)
+    y = IntPtr(0)
     assert extended_euclid(e, m, x, y) == 1
     d = x.val
 
     assert (e * d) % m == 1
 
-    return RsaKey(p, q, e, d)
+    return RsaKey(p=p, q=q, e=e, d=d)
