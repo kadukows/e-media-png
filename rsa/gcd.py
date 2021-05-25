@@ -23,3 +23,11 @@ def extended_euclid(a: int, b: int, x: IntPtr, y: IntPtr) -> int:
     y.val = x1.val
 
     return gcd
+
+def modInverse(a: int, m: int):
+    x = IntPtr(val=0)
+    y = IntPtr(val=0)
+    assert extended_euclid(a, m, x, y) == 1
+
+    # handle negative value
+    return (x.val % m + m) % m

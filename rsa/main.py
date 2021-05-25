@@ -1,13 +1,15 @@
-from rsa_key import RsaKey
+import os
+
+from rsa_key import PrivateRsaKey, RsaKey
 from primes import gen_prime
 from gcd import gcd
 from gen_rsa_key import gen_rsa_key
 
-for i in range(10):
-    a = gen_prime()
-    b = gen_prime()
+rsa_key = gen_rsa_key()
+public_rsa_key = rsa_key.public_key()
+private_rsa_key = rsa_key.private_key()
 
-    print(f'gcd({a}, {b}): ', gcd(a, b))
+encrypted = public_rsa_key.encrypt(org_bytes)
+decrypted = private_rsa_key.decrypt(encrypted)
 
-    rsa_key = gen_rsa_key()
-    print(rsa_key, f"n.bit_length(): {rsa_key.n.bit_length()}")
+assert decrypted == org_bytes, f"RsaKey: {rsa_key}"

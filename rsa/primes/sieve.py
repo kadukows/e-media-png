@@ -1,7 +1,7 @@
 from functools import cached_property
 
 class SieveSingleton:
-    _SIEVE_LENGTH = 10000 * 5
+    _SIEVE_LENGTH = 50000
 
     @cached_property
     def primes(self):
@@ -16,6 +16,6 @@ class SieveSingleton:
 
             cur_prime += 1
 
-        return tuple(number for number, is_prime in enumerate(sieve) if is_prime and number > 10000)
+        return tuple(number for number, is_prime in enumerate(sieve) if is_prime and number > 1000)
 
 sieve_singleton = SieveSingleton()
