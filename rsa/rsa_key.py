@@ -26,7 +26,7 @@ class PublicRsaKey:
     n: int
 
     def encrypt(self, b: bytes):
-        max_length_bytes = int(self.n.bit_length() / 8)
+        max_length_bytes = int((self.n.bit_length() - 1) / 8)
         bytes_to_save = int(math.ceil(self.n.bit_length() / 8))
         result = bytes()
 
@@ -42,13 +42,14 @@ class PublicRsaKey:
         return result
 
 
+
 @dataclass(frozen=True)
 class PrivateRsaKey:
     d: int
     n: int
 
     def decrypt(self, b: bytes):
-        max_length_bytes = int(self.n.bit_length() / 8)
+        max_length_bytes = int((self.n.bit_length() - 1) / 8)
         bytes_to_save = int(math.ceil(self.n.bit_length() / 8))
         result = bytes()
 

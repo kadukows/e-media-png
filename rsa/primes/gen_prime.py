@@ -1,5 +1,6 @@
 from random import randint
+from  Crypto.Util.number import getPrime
 
 def gen_prime() -> int:
     from .sieve import sieve_singleton
-    return sieve_singleton.primes[randint(0, len(sieve_singleton.primes) - 1)]
+    return getPrime(48)

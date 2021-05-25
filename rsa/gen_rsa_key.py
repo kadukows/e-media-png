@@ -3,20 +3,24 @@ from primes import gen_prime
 from gcd import gcd, extended_euclid, modInverse
 from random import randint
 from int_ptr import IntPtr
+from Crypto.Util.number import GCD, getPrime, inverse
 
-def gen_rsa_key() -> RsaKey:
-    n = 1
-    while (n.bit_length() - 1) / 8 < 1:
-        p = gen_prime()
-        q = gen_prime()
-        n = p * q
-
-    m = (p - 1) * (q - 1)
+def gen_rsa_key(bits: int = 48) -> RsaKey:
     e = 2 ** 16 + 1
 
-    # Find d
-    d = modInverse(e, m)
+    p = getPrime(bits)
+    while gcd(p - 1, e) != 1:
+        p = getPrime(bits)
 
-    assert (e * d) % m == 1
+    q = getPrime(bits)
+    while gcd(q - 1, e) != 1:
+        q = getPrime(bits)
+
+    m = (p - 1) * (q - 1)
+
+    # Find d
+    d = inverse(e, m)
+
+    assert (e * d) % m == 1, f"e = {e}, d = {d}, m = {m}, (e * d) % m = {(e*d) % m}"
 
     return RsaKey(p=p, q=q, e=e, d=d)
