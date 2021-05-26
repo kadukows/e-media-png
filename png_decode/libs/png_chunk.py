@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 import numpy as np
-from libs.chunk_resources import ChunkResources
-from libs.crc.crc import crc as calc_crc
+from .chunk_resources import ChunkResources
+from .crc.crc import crc as calc_crc
 
 resources = ChunkResources()
 BigEndian_uint32 = np.dtype('>u4')
@@ -17,7 +17,7 @@ class Chunk:
             np.array([self.data.nbytes], dtype=BigEndian_uint32).tobytes()
             + chunk_name
             + chunk_bytes
-            + calc_crc(chunk_name + chunk_bytes).astype(BigEndian_uint32).tobytes()
+            + np.array([calc_crc(chunk_name + chunk_bytes)], dtype=BigEndian_uint32).tobytes()
         )
 
         return result
@@ -78,7 +78,7 @@ class Chunk_IDAT(Chunk):
 class Chunk_IEND(Chunk):
     chunk_name = 'IEND'
 
-    _chunk_bytes = b'\x00\x00\x00\x00IEND'
+    _chunk_bytes = b'\x00\x00\x00\x00IEND' + np.array([calc_crc(b'IEND')], dtype=BigEndian_uint32).tobytes()
     _crc = calc_crc(b'IEND')
 
     def __init__(self, chunks, b):

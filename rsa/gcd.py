@@ -1,4 +1,4 @@
-from int_ptr import IntPtr
+from .int_ptr import IntPtr
 
 def gcd(a: int, b: int) -> int:
     if a == 0:
