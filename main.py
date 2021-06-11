@@ -1,6 +1,8 @@
-from rsa.gen_rsa_key import gen_rsa_key
-import sys, click, json
+from rsa.rsa_key import EncryptedBytes
+import click, json
 import numpy as np
+import cv2
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey as lib_RsaPrivateKey
 
 from progressbar import progressbar
 from rsa import PrivateRsaKey, PublicRsaKey
@@ -18,21 +20,19 @@ def encrypt(public_key, input, output):
     with open(public_key, 'r') as file:
         public_rsa_key = PublicRsaKey(**json.loads(file.read()))
 
-    with open(input, 'rb') as file:
-        chunks = decode(file)
-        ihdr_chunk = next(chunk for chunk in chunks if chunk.chunk_name == 'IHDR')
-        print(ihdr_chunk)
+    img = cv2.imread(input)
+    h, w, px = img.shape
 
-    idat_chunks = (chunk for chunk in chunks if chunk.chunk_name == 'IDAT')
-    for chunk in idat_chunks:
-        print('Encrypting IDAT chunk')
-        chunk.data = np.frombuffer(public_rsa_key.encrypt(chunk.data.tobytes()), dtype=np.uint8)
+    encrypted_bytes = public_rsa_key.encrypt_better_ecb(img.tobytes())
 
-    with open(output, 'wb') as file:
-        file.write(PNG_HEADER)
-        print('Writing encrypted image')
-        for chunk in progressbar(chunks):
-            file.write(chunk.to_bytes())
+    enc_img = np.frombuffer(encrypted_bytes.main_bytes, dtype='u1')
+    enc_img = np.reshape(enc_img, [h, w, px])
+
+    # save primary bytes
+    cv2.imwrite(output, enc_img)
+
+    with open(output, 'ab') as file:
+        file.write(encrypted_bytes.rest_bytes)
 
 
 @cli.command()
@@ -43,23 +43,22 @@ def decrypt(private_key, input, output):
     with open(private_key, 'r') as file:
         private_rsa_key = PrivateRsaKey(**json.loads(file.read()))
 
+    enc_bytes = EncryptedBytes()
+
+    img = cv2.imread(input)
+    h, w, px = img.shape
+
+    enc_bytes.main_bytes = img.tobytes()
+
     with open(input, 'rb') as file:
-        chunks = decode(file)
+        _ = decode(file)
+        enc_bytes.rest_bytes = file.read()
 
-    idat_chunks = (chunk for chunk in chunks if chunk.chunk_name == 'IDAT')
-    for chunk in idat_chunks:
-        print('Decrypting IDAT chunk')
-        chunk.data = np.frombuffer(private_rsa_key.decrypt(chunk.data.tobytes()), dtype=np.uint8)
+    decoded_image = np.frombuffer(private_rsa_key.decrypt_better_ecb(enc_bytes), dtype='u1')
+    decoded_image = np.reshape(decoded_image, [h, w, px])
 
-    with open(output, 'wb') as file:
-        file.write(PNG_HEADER)
-        print('Writing decrypted image')
-        for chunk in progressbar(chunks):
-            file.write(chunk.to_bytes())
+    cv2.imwrite(output, decoded_image)
 
-@cli.command()
-def gen_rsa():
-    rsa = gen_rsa_key(512)
 
 
 if __name__ == '__main__':

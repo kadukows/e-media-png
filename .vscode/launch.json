@@ -5,18 +5,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: main.py",
+            "name": "main.py encrypt",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "args": [
                 "encrypt",
                 "-pk",
-                "rsa/public.rsa",
+                "public.rsa",
                 "-i",
-                "png_decode/lena.png",
+                "linux.png",
                 "-o",
-                "lena_enc.png"
+                "out.png"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "main.py decrypt",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "decrypt",
+                "-pk",
+                "private.rsa",
+                "-i",
+                "out.png",
+                "-o",
+                "linux_dec.png"
             ],
             "console": "integratedTerminal"
         }
