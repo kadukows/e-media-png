@@ -114,8 +114,8 @@ def decrypt_ECB(enc_bytes: EncryptedBytes, private_key: RsaPrivateKey) -> bytes:
         rest_bytes_offset += diff
 
     last_to_decrypt_main_part = enc_bytes.main_bytes[main_bytes_offset:main_bytes_offset + last_block_size]
-    last_to_decrypt_rest_part = enc_bytes.rest_bytes[rest_bytes_offset:encrypted_block_size - last_block_size]
-    last_to_decrypted = private_key.decrypt(last_to_decrypt_main_part + last_to_decrypt_rest_part)
+    last_to_decrypt_rest_part = enc_bytes.rest_bytes[rest_bytes_offset:rest_bytes_offset + encrypted_block_size - last_block_size]
+    last_to_decrypted = int.from_bytes(private_key.decrypt(last_to_decrypt_main_part + last_to_decrypt_rest_part), byteorder='little').to_bytes(last_block_size, byteorder='little')
 
     result += last_to_decrypted
 
