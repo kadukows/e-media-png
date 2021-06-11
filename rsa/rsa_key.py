@@ -75,7 +75,7 @@ def encrypt_ECB(b: bytes, public_key: RsaPublicKey) -> EncryptedBytes:
         # save the same size to main bytes
         result.main_bytes += encrypted[:decrypted_block_size]
         # save rest to other var
-        result.rest_bytes += encrypted[encrypted_block_size:]
+        result.rest_bytes += encrypted[decrypted_block_size:]
 
 
     last_encrypted = public_key.encrypt(b[range_to_encrypt:])

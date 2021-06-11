@@ -32,7 +32,7 @@
                 "-i",
                 "out.png",
                 "-o",
-                "linux_dec.png"
+                "linux_out.png"
             ],
             "console": "integratedTerminal"
         }
