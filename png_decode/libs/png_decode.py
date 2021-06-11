@@ -30,11 +30,6 @@ def decode(binary_file) -> List[chunk.Chunk]:
                     assert crc == calculated_crc, 'CRC is wrong in decoded file, chunk_name: {}, {:b}'.format(chunk_name, crc & calculated_crc)
                     result.append(chunk.resources.get()[chunk_name](result, chunk_bytes))
 
-                    #my_bytes = result[len(result) - 1].to_bytes()
-                    #org_bytes = length_bytes + chunk_name_bytes + chunk_bytes + crc_bytes
-
-                    #assert len(my_bytes) == len(org_bytes)
-
             else:
                 binary_file.seek(length + 4, 1)
 

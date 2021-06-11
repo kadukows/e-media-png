@@ -1,3 +1,4 @@
+from rsa.gen_rsa_key import gen_rsa_key
 import sys, click, json
 import numpy as np
 
@@ -55,6 +56,11 @@ def decrypt(private_key, input, output):
         print('Writing decrypted image')
         for chunk in progressbar(chunks):
             file.write(chunk.to_bytes())
+
+@cli.command()
+def gen_rsa():
+    rsa = gen_rsa_key(512)
+
 
 if __name__ == '__main__':
     cli()

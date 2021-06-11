@@ -25,7 +25,7 @@ class PublicRsaKey:
     e: int
     n: int
 
-    def encrypt(self, b: bytes):
+    def encrypt(self, b: bytes) -> bytes:
         max_length_bytes = int((self.n.bit_length() - 1) / 8)
         bytes_to_save = int(math.ceil(self.n.bit_length() / 8))
         result = bytes()
