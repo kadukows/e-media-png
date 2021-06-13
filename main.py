@@ -1,10 +1,10 @@
-from rsa.rsa_key import EncryptedBytes, encrypt_ECB, decrypt_ECB, encrypt_CBC, decrypt_CBC, encrypt_Lib, decrypt_Lib
+from rsa.rsa_key import EncryptedBytes, encrypt_ECB, decrypt_ECB, encrypt_CBC, decrypt_CBC, encrypt_Lib
 import click, json
 import numpy as np
 import cv2
 
 from progressbar import progressbar
-from rsa import MyRsaPrivateKey, MyRsaPublicKey, LibRsaPublicKey, LibRsaPrivateKey
+from rsa import MyRsaPrivateKey, MyRsaPublicKey
 from png_decode import PNG_HEADER, decode
 
 @click.group()
@@ -51,7 +51,6 @@ def decrypt(private_key, input, output, method):
     methods_dict = {
     "ECB": decrypt_ECB,
     "CBC": decrypt_CBC,
-    "LIB": decrypt_Lib
     }
     
     with open(private_key, 'r') as file:
@@ -76,8 +75,8 @@ def decrypt(private_key, input, output, method):
     cv2.imwrite(output, decoded_image)
 
 @cli.command()
-@click.option('--input', '-i', help='Input image')
-@click.option('--output', '-o', default='out.png', help='Output image')
+@click.option('--input', '-i', help='First image')
+@click.option('--output', '-o', help='Second image')
 def compare(input, output):
     input_image = cv2.imread(input)
     output_image = cv2.imread(output)
