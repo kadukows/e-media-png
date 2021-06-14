@@ -77,9 +77,9 @@ def encrypt_CBC(b: bytes, public_key: RsaPublicKey) -> EncryptedBytes:
 
     result = EncryptedBytes()
     
-    
+    random.seed(1337)
     init_vector = random.getrandbits(decrypted_block_size * 8)
-    vector =  init_vector.to_bytes(decrypted_block_size, 'little')
+    vector =  init_vector.to_bytes(decrypted_block_size * 8, 'little')
 
     for offset in progressbar.progressbar(range(0, range_to_encrypt, decrypted_block_size)):
         bytes_to_encrypt = copy.copy(b[offset:offset + decrypted_block_size])
@@ -120,9 +120,9 @@ def decrypt_CBC(enc_bytes: EncryptedBytes, private_key: RsaPrivateKey) -> bytes:
     rest_bytes_offset = 0
     diff = encrypted_block_size - decrypted_block_size
 
-
-    init_vector = random.getrandbits(encrypted_block_size * 8)
-    vector =  init_vector.to_bytes(encrypted_block_size * 8, 'little')
+    random.seed(1337)
+    init_vector = random.getrandbits(decrypted_block_size * 8)
+    vector =  init_vector.to_bytes(decrypted_block_size * 8, 'little')
 
     for main_bytes_offset in progressbar.progressbar(range(0, range_to_decrypt, decrypted_block_size)):
         to_decrypt_main = enc_bytes.main_bytes[main_bytes_offset:main_bytes_offset + decrypted_block_size]

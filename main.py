@@ -88,6 +88,8 @@ def compare(input, output):
     else:
         print("IMAGES ARE NOT THE SAME (size)")
 
+    res = output_image - input_image
+    cv2.imwrite("plik.png", res)
 
 if __name__ == '__main__':
     cli()
