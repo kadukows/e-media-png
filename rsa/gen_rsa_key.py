@@ -1,10 +1,9 @@
-from .rsa_key import RsaKey
-from .gcd import gcd, extended_euclid, modInverse
-from random import randint
-from .int_ptr import IntPtr
-from Crypto.Util.number import GCD, getPrime, inverse
+from .gcd import gcd
+from Crypto.Util.number import getPrime, inverse
 
-def gen_rsa_key(bits: int = 48) -> RsaKey:
+def gen_rsa_key(bits: int = 48):
+    from .rsa_key import RsaKey
+
     e = 2 ** 16 + 1
 
     p = getPrime(bits)

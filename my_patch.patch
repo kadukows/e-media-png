@@ -1,0 +1,299 @@
+diff --git a/main.py b/main.py
+index 6a71d7d..17bb97f 100644
+--- a/main.py
++++ b/main.py
+@@ -4,6 +4,70 @@ import numpy as np
+ from progressbar import progressbar
+ from rsa import PrivateRsaKey, PublicRsaKey
+ from png_decode import PNG_HEADER, decode
++import png
++import cv2 
++import zlib
++import matplotlib.pyplot as plt
++
++
++
++def PaethPredictor(a, b, c):
++    p = a + b - c
++    pa = abs(p - a)
++    pb = abs(p - b)
++    pc = abs(p - c)
++    if pa <= pb and pa <= pc:
++        Pr = a
++    elif pb <= pc:
++        Pr = b
++    else:
++        Pr = c
++    return Pr
++
++
++def Recon_a(Recon, r, c, stride, bytesPerPixel):
++    return Recon[r * stride + c - bytesPerPixel] if c >= bytesPerPixel else 0
++
++
++def Recon_b(Recon, r, c, stride, bytesPerPixel):
++    return Recon[(r - 1) * stride + c] if r > 0 else 0
++
++
++def Recon_c(Recon, r, c, stride, bytesPerPixel):
++    return Recon[(r - 1) * stride + c - bytesPerPixel] if r > 0 and c >= bytesPerPixel else 0
++
++
++def decode_idat_chunk(data, width, height, bytesPerPixel) -> np.uint8:
++    stride = width * bytesPerPixel
++    Recon = []
++
++    i = 0
++    for r in range(height):  # for each scanline
++        filter_type = data[i]  # first byte of scanline is filter type
++        i += 1
++        for c in range(stride):  # for each byte in scanline
++            Filt_x = data[i]
++            i += 1
++            if filter_type == 0:  # None
++                Recon_x = Filt_x
++            elif filter_type == 1:  # Sub
++                Recon_x = Filt_x + Recon_a(Recon, r, c, stride, bytesPerPixel)
++            elif filter_type == 2:  # Up
++                Recon_x = Filt_x + Recon_b(Recon, r, c, stride, bytesPerPixel)
++            elif filter_type == 3:  # Average
++                Recon_x = Filt_x + (Recon_a(Recon, r, c, stride, bytesPerPixel)
++                                    + Recon_b(Recon, r, c, stride, bytesPerPixel)) // 2
++            elif filter_type == 4:  # Paeth
++                Recon_x = Filt_x + PaethPredictor(Recon_a(Recon, r, c, stride, bytesPerPixel),
++                                                  Recon_b(Recon, r, c, stride, bytesPerPixel),
++                                                  Recon_c(Recon, r, c, stride, bytesPerPixel))
++            else:
++                raise Exception('unknown filter type: ' + str(filter_type))
++            Recon.append(Recon_x & 0xff)  # truncation to byte
++
++    return Recon
++
++
+ 
+ @click.group()
+ def cli():
+@@ -17,23 +81,75 @@ def encrypt(public_key, input, output):
+     with open(public_key, 'r') as file:
+         public_rsa_key = PublicRsaKey(**json.loads(file.read()))
+ 
++    ihdr_chunk=0
+     with open(input, 'rb') as file:
+         chunks = decode(file)
+         ihdr_chunk = next(chunk for chunk in chunks if chunk.chunk_name == 'IHDR')
+         print(ihdr_chunk)
+ 
++    
++    
++
++    data = b''.join(chunk.data for chunk in chunks if chunk.chunk_name == 'IDAT')
+     idat_chunks = (chunk for chunk in chunks if chunk.chunk_name == 'IDAT')
+     for chunk in idat_chunks:
+         print('Encrypting IDAT chunk')
+         chunk.data = np.frombuffer(public_rsa_key.encrypt(chunk.data.tobytes()), dtype=np.uint8)
+ 
++    print("AAAA" )
++    data_decompressed = zlib.decompress(data)
++    data_decoded = decode_idat_chunk(data_decompressed, ihdr_chunk.width(), ihdr_chunk.height(), ihdr_chunk.bytes_per_pixel())
++    data_encrypted = np.frombuffer(public_rsa_key.encrypt(bytes(data_decoded)), dtype=np.uint8)
++    plt.imshow(np.array(data_encrypted, dtype=np.uint8).reshape((ihdr_chunk.height(), ihdr_chunk.width(), ihdr_chunk.bytes_per_pixel())), vmin=0, vmax=255)
++    plt.show()
++
++
++
++    #with open('lena.png', 'rb') as image_file:
++    #     content1 = image_file.read()
++    #image = cv2.imread('lena.png')
++    #success, encoded_image = cv2.imencode('.png', image)
++    #content2 = encoded_image.tobytes()
++    #content1 == content2
++
++    '''
++    img = cv2.imread('LAND.BMP', 0) 
++    print("ESSA")
++    data = np.array(img)
++    flattened = data.flatten().tobytes()
++    print("LEN FLATTENED" + str(len(flattened)))
++    
++    result = np.frombuffer(public_rsa_key.encrypt(flattened), dtype=np.uint8)
++    print("LEN RESULT" + str(len(result)))
++
++    im = np.frombuffer(result, dtype=np.uint8)
++    frame = cv2.imdecode(im, cv2.IMREAD_UNCHANGED)
++    print(frame)
++
++    cv2.imshow('image', frame)
++    cv2.waitKey(1)
++    '''
++
++    
++    #print("B PER PIXEL: " + str(ihdr_chunk.bytes_per_pixel()))
++    #bytes_row_width = 512 * ihdr_chunk.bytes_per_pixel()
++    #bytes_row_width = 512 * 3
++    #pixels_grouped_by_rows = [data[i: i + bytes_row_width] for i in range(0, len(data), bytes_row_width)]
++    #writer = png.Writer(512, 512, greyscale=False, alpha=False)
++    #file = open('lena_lib.png', 'wb')
++    ##print("PIXELS GROUPED: " + str(pixels_grouped_by_rows))
++    #writer.write(file, pixels_grouped_by_rows)
++    #file.close()
++    
++    
+     with open(output, 'wb') as file:
+         file.write(PNG_HEADER)
+         print('Writing encrypted image')
+         for chunk in progressbar(chunks):
++            print(ihdr_chunk.bytes_per_pixel())
+             file.write(chunk.to_bytes())
+-
+-
++    
++    
+ @cli.command()
+ @click.option('--private-key', '-pk', default='private.rsa', help='File containing public RSA key')
+ @click.option('--input', '-i', help='Input image')
+diff --git a/png_decode/libs/png_chunk.py b/png_decode/libs/png_chunk.py
+index e61cb0b..b44be79 100644
+--- a/png_decode/libs/png_chunk.py
++++ b/png_decode/libs/png_chunk.py
+@@ -12,6 +12,8 @@ class Chunk:
+     def to_bytes(self) -> bytes:
+         chunk_name = self.chunk_name.encode('ascii')
+         chunk_bytes = self.data.tobytes()
++        #chunk_bytes = self.data
++
+ 
+         result = (
+             np.array([self.data.nbytes], dtype=BigEndian_uint32).tobytes()
+@@ -25,6 +27,8 @@ class Chunk:
+ 
+ @resources.register
+ class Chunk_IHDR(Chunk):
++    chunk_name = 'IHDR'
++    
+     Data = np.dtype([
+         ('width', BigEndian_uint32),
+         ('height', BigEndian_uint32),
+@@ -35,7 +39,25 @@ class Chunk_IHDR(Chunk):
+         ('interlace_method', np.uint8)
+     ])
+ 
+-    chunk_name = 'IHDR'
++    def bytes_per_pixel(self) -> np.uint8:
++        bytes_per_pixel = 0
++        if self.data['color_type'][0] == 0:
++            bytes_per_pixel = 1
++        if self.data['color_type'][0] == 2:
++            bytes_per_pixel = 3
++        if self.data['color_type'][0] == 4:
++            bytes_per_pixel = 2
++        if self.data['color_type'][0] == 6:
++            bytes_per_pixel = 4
++        return bytes_per_pixel
++
++    def width(self):
++        return self.data['width'][0]
++    
++    def height(self):
++        return self.data['height'][0]
++        
++
+ 
+     def __init__(self, chunks, b):
+         assert len(b) == self.Data.itemsize
+@@ -137,8 +159,11 @@ class Chunk_tIME(Chunk):
+ class Chunk_tEXt(Chunk):
+     chunk_name = 'tEXt'
+ 
++    def to_bytes(self):
++        return self.data
++
+     def __str__(self):
+-     return "tEXt Chunk Data: " + '\n' + \
++        return "tEXt Chunk Data: " + '\n' + \
+             "Keyword: " + self.Keyword + '\n' + \
+             "Text: " + self.Text + '\n'
+ 
+diff --git a/rsa/rsa_key.py b/rsa/rsa_key.py
+index 4ddb0d6..5322e5e 100644
+--- a/rsa/rsa_key.py
++++ b/rsa/rsa_key.py
+@@ -1,5 +1,6 @@
+ from dataclasses import dataclass
+-from functools import cached_property
++#from functools import cached_property
++from werkzeug.utils import cached_property
+ import progressbar, math
+ 
+ @dataclass(frozen=True)
+@@ -26,6 +27,54 @@ class PublicRsaKey:
+     n: int
+ 
+     def encrypt(self, b: bytes):
++        
++        max_length_bytes = int((self.n.bit_length() - 1) / 8)
++        #max_length_bytes=64
++        bytes_to_save = int(math.ceil(self.n.bit_length() / 8))
++        result = bytes()
++
++        range_to_encrypt = len(b) - (len(b) % max_length_bytes)
++        #range_to_encrypt = len(b)
++
++        print("RANGE " + str(range_to_encrypt))
++        print("MAXLENGTH " + str(max_length_bytes))
++
++
++        for offset in progressbar.progressbar(range(0, range_to_encrypt, max_length_bytes)):
++            to_encrypt = int.from_bytes(b[offset:offset+max_length_bytes], 'big')
++            encrypted = pow(to_encrypt, self.e, self.n)
++            result += encrypted.to_bytes(bytes_to_save, byteorder='big')
++            result = result[:-1]
++
++
++        result += b[range_to_encrypt:]
++        
++        print("ORGSIZE: " + str(len(b)))
++        print("RESSIZE: " + str(len(result)))
++        print("RESSIZE2: " + str(len(result)))
++        
++        
++        return result;
++        #return b;
++        #return result[:len(b)]
++        
++
++        '''
++        size_of_block = 64 # rozmiar bloku w bajtach
++
++        pixels = []
++        for i in range(0,len(b),size_of_block):
++            bytes_to_encrypt = bytearray(b[i: i + size_of_block]) # pobranie bloku danych do zakodowania
++            cipher_text = pow(int.from_bytes(bytes_to_encrypt, 'big'), self.e, self.n) # kodowanie do kryptogramu (blok^e mod n)
++            block = cipher_text.to_bytes(int(self.n.bit_length()/8), 'big') # tworzony jest blok o stalej długości klucza n w bajtach tak aby była stała szerokość
++
++            for j in range(0,len(block)):
++                pixels.append(block[j])   # każy bajt jest osobno dodawany do tablicy pikseli
++
++        return pixels[:len(block)]
++        '''
++        
++        '''
+         max_length_bytes = int((self.n.bit_length() - 1) / 8)
+         bytes_to_save = int(math.ceil(self.n.bit_length() / 8))
+         result = bytes()
+@@ -38,9 +87,15 @@ class PublicRsaKey:
+             result += encrypted.to_bytes(bytes_to_save, byteorder='little')
+ 
+         result += b[range_to_encrypt:]
++        
++        print("ORGSIZE: " + str(len(b)))
++        print("RESSIZE: " + str(len(result)))
++        result = result[:len(b)]
++        print("RESSIZE2: " + str(len(result)))
+ 
+-        return result
+ 
++        return result[:len(b)]
++        '''
+ 
+ 
+ @dataclass(frozen=True)

@@ -6,7 +6,7 @@ from gen_rsa_key import gen_rsa_key
 
 from dataclasses import asdict
 
-rsa_key = gen_rsa_key(255)
+rsa_key = gen_rsa_key(512)
 
 public_rsa_key = rsa_key.public_key()
 private_rsa_key = rsa_key.private_key()
